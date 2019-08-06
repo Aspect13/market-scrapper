@@ -36,10 +36,10 @@ def download_item(soup, category_name=None):
 
 		try: #todo: remove all tries like that
 			product = Product(list_soup=i)
-			print(product)
-			print(product.reviews)
+			# print(product)
+			# print(product.reviews)
 		except Exception as e:
-			logger.critical(f'Some other shit {e.args} happened to item in url for {category_name}')
+			logger.critical(f'Some other shit {e.args} happened to item in url for {category_name} :: 42')
 			continue
 		# product = Product(detail_url='https://market.yandex.ru/product--la-molisana-spa-makarony-spaghetti-s-chernilami-karakatitsy-500-g/162662608/spec?track=tabs')
 		print('DB')
@@ -56,14 +56,12 @@ def download_item(soup, category_name=None):
 	print('LOOP END')
 
 
-
-
 def download_list(url_object):
 	category_name, url = url_object.get('category_name'), url_object['url']
 	try: #todo: remove all tries like that
 		soup = get_soup(url)
 	except (ConnectionError, TimeoutError):
-		logger.critical('Some shit happened to url: {}'.format(url))
+		logger.critical(f'Some shit happened to url: {url} :: 64')
 		return
 	pages_count = get_pages_count(soup)
 
@@ -78,7 +76,7 @@ def download_list(url_object):
 			soup = get_soup(new_url)
 			download_item(soup, category_name)
 		except Exception as e:
-			logger.critical(f'Some {e.args} happened to ur {new_url}')
+			logger.critical(f'Some {e.args} happened to ur {new_url} :: 79')
 
 
 if __name__ == '__main__':

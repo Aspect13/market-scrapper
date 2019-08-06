@@ -34,17 +34,17 @@ def cache_html(url, name, attempts=1):
 	TIMEOUT_SEC = 10
 
 	if attempts > MAX_GET_ATTEMPTS:
-		logger.critical('Tried {} times to get URL {}'.format(MAX_GET_ATTEMPTS, url))
-		raise TimeoutError('Tried {} times to get URL {}'.format(MAX_GET_ATTEMPTS, url))
-	logger.info('GETting: {}   ; attempt: {}'.format(url, attempts))
+		logger.critical(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
+		raise TimeoutError(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
+	logger.info(f'GETting: {url}\nattempt: {attempts}')
 	site = requests.get(url)
 	if is_captcha(site.content):
-		logger.warning('!!! Got captcha for url: {}  sleeping for {}s...'.format(url, TIMEOUT_SEC))
+		logger.warning(f'!!! Got captcha for url: {url}\nsleeping for {TIMEOUT_SEC}s...')
 		sleep(TIMEOUT_SEC)
 		return cache_html(url, name, attempts=attempts+1)
-	with open('{}/{}'.format(CACHED_FOLDER, name), 'wb') as out:
+	with open(f'{CACHED_FOLDER}/{name}', 'wb') as out:
 		out.write(site.content)
-	logger.info('Cache name: ', name)
+	logger.info(f'Cache name: {name}')
 	return site.content
 
 
@@ -56,7 +56,7 @@ def get_soup(url):
 	try: #todo: remove all tries like that
 		site_data = get_data(url)
 	except Exception as e:
-		logger.critical(f'Some other shit {e.args} happened to url for {url}')
+		logger.critical(f'Some other shit {e.args} happened to url for {url} :: 59')
 		return
 	# site_data = get_data(url)
 	return BeautifulSoup(site_data, 'html.parser')

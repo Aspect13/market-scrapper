@@ -1,0 +1,10 @@
+/.idea/
+/venv/
+/cached/
+cache_dict.json
+link_set.json
+*.log
+*.sqlite
+/sitecache.html
+
+/tmp/
