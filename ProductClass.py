@@ -3,8 +3,12 @@ import json
 from datetime import datetime
 from pip._internal.utils.misc import cached_property
 
-from utils import get_soup, get_pages_count
+from utils import get_soup, get_pages_count, write_tmp_soup
 from logger_custom import logger
+
+# import locale
+# locale.setlocale(locale.LC_TIME, ('RU', 'UTF8'))
+
 
 PAGE_PARAM = 'page={}'
 
@@ -133,17 +137,70 @@ class Review:
 
 	def __init__(self, soup):
 		self.soup = soup
-		self.id = soup['data-review-id']
-		data = self.soup.find('div', {'itemprop': 'review'})
-		self.date = datetime.strptime(data.find('meta', {'itemprop': 'datePublished'})['content'], '%Y-%m-%d')
-		self.author = data.find('meta', {'itemprop': 'author'})['content']
-		self.description = data.find('meta', {'itemprop': 'description'})['content']
-		self.rating = data.find('div', {'itemprop': 'reviewRating'}).find('meta', {'itemprop': 'ratingValue'})['content']
-
 		self.pros = ''
 		self.cons = ''
 		self.comment = ''
-		self.parse_description()
+
+		write_tmp_soup(soup)
+
+		try:
+			self.id = soup['data-review-id']
+		except KeyError:
+			self.id = soup.div['data-review-id']
+
+		data = self.soup.find('div', {'itemprop': 'review'})
+		if data:
+			logger.debug('Review trying NEW method...')
+			self.date = datetime.strptime(data.find('meta', {'itemprop': 'datePublished'})['content'], '%Y-%m-%d')
+			self.author = data.find('meta', {'itemprop': 'author'})['content']
+			self.description = data.find('meta', {'itemprop': 'description'})['content']
+			self.rating = data.find('div', {'itemprop': 'reviewRating'}).find('meta', {'itemprop': 'ratingValue'})['content']
+			self.parse_description()
+		else:
+			logger.debug('Review trying OLD method...')
+			self.date = self.process_date_string(soup.find('span', 'n-product-review-item__date-region').string)
+			self.author = soup.find('', 'n-product-review-user__name').string
+			# self.comment = soup.find('dd', 'n-product-review-item__text').string
+			# self.description = f'{self.COMMENT_WORD} {self.comment}'
+			self.rating = soup.find('div', 'rating__value').string
+			self.process_description_from_markup()
+
+	@staticmethod
+	def process_date_string(date_string):
+
+		months_dict = {
+			'января': 1,
+			'февраля': 2,
+			'марта': 3,
+			'апреля': 4,
+			'мая': 5,
+			'июня': 6,
+			'июля': 7,
+			'августа': 8,
+			'сентября': 9,
+			'октября': 10,
+			'ноября': 11,
+			'декабря': 12,
+		}
+		tmp = date_string.split()
+		modified = f'{tmp[0]}-{months_dict[tmp[1].strip(",").lower()]}'
+		return datetime.strptime(modified, '%d-%m')
+
+	@staticmethod
+	def _extract(substring, tag):
+		try:
+			return substring in tag.string
+		except (TypeError, AttributeError):
+			return False
+
+	def process_description_from_markup(self):
+		for i in self.soup.find_all('dl', 'n-product-review-item__stat'):
+			if self._extract(self.PROS_WORD, i.dt):
+				self.pros = i.dd.string
+			elif self._extract(self.CONS_WORD, i.dt):
+				self.cons = i.dd.string
+			else:
+				self.comment += i.dd.string + ' '
 
 	def parse_description(self):
 		pros_start = self.description.find(self.PROS_WORD)

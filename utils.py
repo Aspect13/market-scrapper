@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -9,7 +11,16 @@ from logger_custom import logger
 CACHED_FOLDER = 'cached'
 
 
+class IsRedirectError(Exception):
+	def __init__(self, *args, **kwargs):
+		print('IsRedirectError', args, kwargs)
+	strerror = 'Link is a redirect'
+
+
 def get_data(url):
+	if is_redirect(url):
+		logger.critical(f'URL is a redirect: {url}')
+		raise IsRedirectError
 	cache_dict_file = 'cache_dict.json'
 	cache_dict = json.load(open(cache_dict_file, 'r'))
 	file_name = cache_dict.get(url, None)
@@ -36,10 +47,12 @@ def cache_html(url, name, attempts=1):
 	if attempts > MAX_GET_ATTEMPTS:
 		logger.critical(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
 		raise TimeoutError(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
-	logger.info(f'GETting: {url}\nattempt: {attempts}')
+	logger.info(f'GETting: {url}')
+	logger.info(f'attempt: {attempts}')
 	site = requests.get(url)
 	if is_captcha(site.content):
-		logger.warning(f'!!! Got captcha for url: {url}\nsleeping for {TIMEOUT_SEC}s...')
+		logger.warning(f'!!! Got captcha for url: {url}')
+		logger.warning(f'sleeping for {TIMEOUT_SEC}s...')
 		sleep(TIMEOUT_SEC)
 		return cache_html(url, name, attempts=attempts+1)
 	with open(f'{CACHED_FOLDER}/{name}', 'wb') as out:
@@ -52,12 +65,12 @@ def is_captcha(html):
 	return b'<a class="link" href="//yandex.ru/support/captcha/"' in html
 
 
+def is_redirect(url):
+	return '/redir/' in url
+
+
 def get_soup(url):
-	try: #todo: remove all tries like that
-		site_data = get_data(url)
-	except Exception as e:
-		logger.critical(f'Some other shit {e.args} happened to url for {url} :: 59')
-		return
+	site_data = get_data(url)
 	# site_data = get_data(url)
 	return BeautifulSoup(site_data, 'html.parser')
 
@@ -67,3 +80,8 @@ def get_pages_count(soup):
 	if pagebar:
 		return int(json.loads(pagebar['data-bem'])['n-pager']['pagesCount'])
 	return 1
+
+
+def write_tmp_soup(soup):
+	with open(f'{Path(__file__).absolute().parent}/sitecache.html', 'w') as out:
+		out.write(soup.prettify())
