@@ -1,16 +1,12 @@
 import asyncio
-from pathlib import Path
-
 import aiohttp
-import requests
 import json
+
 from bs4 import BeautifulSoup
 from uuid import uuid4
-from time import sleep
 
-from logger_custom import logger
-
-CACHED_FOLDER = 'cached'
+from common.logger_custom import logger
+from common.settings import MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, CACHE_DICT_PATH, CACHED_FOLDER, HEADERS
 
 
 class IsRedirectError(Exception):
@@ -21,7 +17,7 @@ class IsRedirectError(Exception):
 
 
 async def fetch(session, url):
-	async with session.get(url) as response:
+	async with session.get(url, headers=HEADERS) as response:
 		return await response.text()
 
 
@@ -29,7 +25,7 @@ async def get_data(url):
 	if is_redirect(url):
 		logger.warning(f'URL is a redirect: {url}')
 		raise IsRedirectError
-	cache_dict_file = 'cache_dict.json'
+	cache_dict_file = CACHE_DICT_PATH
 	cache_dict = json.load(open(cache_dict_file, 'r'))
 	file_name = cache_dict.get(url, None)
 	if not file_name:
@@ -44,14 +40,11 @@ async def get_data(url):
 		except FileNotFoundError:
 			del cache_dict[url]
 			json.dump(cache_dict, open(cache_dict_file, 'w'))
-			return get_data(url)
+			return await get_data(url)
 	return contents
 
 
 async def cache_html(url, name, attempts=1):
-	MAX_GET_ATTEMPTS = 3
-	TIMEOUT_SEC = 10
-
 	if attempts > MAX_GET_ATTEMPTS:
 		logger.critical(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
 		raise TimeoutError(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
@@ -63,17 +56,18 @@ async def cache_html(url, name, attempts=1):
 		# print('SSSSSSSSSSSs', site)
 	if is_captcha(site):
 		logger.warning(f'Captcha received for url: {url}')
-		logger.warning(f'sleeping for {TIMEOUT_SEC * attempts}s...')
+		logger.warning(f'Sleeping for {TIMEOUT_SEC * attempts}s...')
 		await asyncio.sleep(TIMEOUT_SEC * attempts)
 		return await cache_html(url, name, attempts=attempts+1)
-	with open(f'{CACHED_FOLDER}/{name}', 'wb') as out:
+	with open(f'{CACHED_FOLDER}/{name}', 'w') as out:
 		out.write(site)
 	logger.info(f'Cache name: {name}')
 	return site
 
 
 def is_captcha(html):
-	return b'<a class="link" href="//yandex.ru/support/captcha/"' in html
+	# return b'<a class="link" href="//yandex.ru/support/captcha/"' in html
+	return '<a class="link" href="//yandex.ru/support/captcha/"' in html
 
 
 def is_redirect(url):
@@ -94,5 +88,5 @@ def get_pages_count(soup):
 
 
 def write_tmp_soup(soup):
-	with open(f'{Path(__file__).absolute().parent}/sitecache.html', 'w') as out:
+	with open(SITECACHE_PATH, 'w') as out:
 		out.write(soup.prettify())

@@ -1,14 +1,14 @@
-from pathlib import Path
-
 import requests
 import json
+
 from bs4 import BeautifulSoup
 from uuid import uuid4
 from time import sleep
 
-from logger_custom import logger
+from fake_useragent import UserAgent
 
-CACHED_FOLDER = 'cached'
+from common.logger_custom import logger
+from common.settings import CACHE_DICT_PATH, CACHED_FOLDER, MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, HEADERS
 
 
 class IsRedirectError(Exception):
@@ -22,7 +22,7 @@ def get_data(url):
 	if is_redirect(url):
 		logger.warning(f'URL is a redirect: {url}')
 		raise IsRedirectError
-	cache_dict_file = 'cache_dict.json'
+	cache_dict_file = CACHE_DICT_PATH
 	cache_dict = json.load(open(cache_dict_file, 'r'))
 	file_name = cache_dict.get(url, None)
 	if not file_name:
@@ -42,8 +42,9 @@ def get_data(url):
 
 
 def cache_html(url, name, attempts=1):
-	MAX_GET_ATTEMPTS = 3
-	TIMEOUT_SEC = 10
+	# proxies = {
+	# 	'http': 'socks5://127.0.0.1:9050',
+	# }
 
 	if attempts > MAX_GET_ATTEMPTS:
 		logger.critical(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
@@ -51,12 +52,14 @@ def cache_html(url, name, attempts=1):
 	logger.info(f'GET: {url}')
 	if attempts > 1:
 		logger.info(f'attempt: {attempts}')
-	site = requests.get(url)
+
+	site = requests.get(url, headers=HEADERS())
 	site.encoding = 'utf-8'
+
 	if is_captcha(site.content):
 		logger.warning(f'Captcha received for url: {url}')
-		logger.warning(f'sleeping for {TIMEOUT_SEC}s...')
-		sleep(TIMEOUT_SEC)
+		logger.warning(f'sleeping for {TIMEOUT_SEC * attempts}s...')
+		sleep(TIMEOUT_SEC * attempts)
 		return cache_html(url, name, attempts=attempts+1)
 	with open(f'{CACHED_FOLDER}/{name}', 'wb') as out:
 		out.write(site.content)
@@ -86,5 +89,5 @@ def get_pages_count(soup):
 
 
 def write_tmp_soup(soup):
-	with open(f'{Path(__file__).absolute().parent}/sitecache.html', 'w') as out:
+	with open(SITECACHE_PATH, 'w') as out:
 		out.write(soup.prettify())

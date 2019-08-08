@@ -2,14 +2,15 @@ import json
 
 from sqlalchemy.exc import IntegrityError
 
-from ProductClass import Product, PAGE_PARAM
-from logger_custom import logger
-from models import ProductModel, ReviewModel, Session
+from common.settings import LINK_SET_PATH
+from syncronous.ProductClass import Product, PAGE_PARAM
+from common.logger_custom import logger
+from common.models import ProductModel, ReviewModel, Session
 
 # browser = webdriver.PhantomJS()
 # browser.get(url)
 # html = browser.page_source
-from utils import get_soup, get_pages_count, IsRedirectError
+from syncronous.utils import get_soup, get_pages_count, IsRedirectError
 
 
 def download_item(soup, category_name=None):
@@ -43,8 +44,8 @@ def download_item(soup, category_name=None):
 		try:
 			session.commit()
 		except IntegrityError as e:
-			logger.critical(f'Integrity error for category_name: {category_name} {product.detail_url}')
-			logger.critical(f'Integrity error for category_name: {product.name}#{product.id}')
+			# logger.warning(f'Integrity error for category_name: {category_name} {product.detail_url}')
+			# logger.warning(f'Integrity error for category_name: {product.name}#{product.id}')
 			session.rollback()
 			session.flush()
 			# logger.critical('For test purposes continue...')
@@ -54,11 +55,11 @@ def download_item(soup, category_name=None):
 
 def download_list(url_object):
 	category_name, url = url_object.get('category_name'), url_object['url']
-	try: #todo: remove all tries like that
-		soup = get_soup(url)
-	except (ConnectionError, TimeoutError):
-		logger.critical(f'Some shit happened to url: {url} :: 64')
-		return
+	# try: #todo: remove all tries like that
+	soup = get_soup(url)
+	# except (ConnectionError, TimeoutError):
+	# 	logger.critical(f'Some shit happened to url: {url} :: 64')
+	# 	return
 	pages_count = get_pages_count(soup)
 
 	logger.debug(f'Found {pages_count} pages for list url {url}')
@@ -76,7 +77,8 @@ def download_list(url_object):
 
 
 if __name__ == '__main__':
-	link_set = json.load(open('link_set.json', 'r', encoding='utf8'))
+	link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
+	# link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
 	logger.info('START\n')
 	while link_set:
 		url_object_form_json = link_set.pop()

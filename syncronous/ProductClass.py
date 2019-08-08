@@ -1,16 +1,17 @@
-import requests
+from urllib.parse import urlparse
+
+# import requests
 import json
 from datetime import datetime
 from pip._internal.utils.misc import cached_property
 
-from utils import get_soup, get_pages_count, write_tmp_soup
-from logger_custom import logger
+# from syncronous.utils import get_soup, get_pages_count, write_tmp_soup
+from common.logger_custom import logger
 
 # import locale
 # locale.setlocale(locale.LC_TIME, ('RU', 'UTF8'))
-
-
-PAGE_PARAM = 'page={}'
+from common.settings import PAGE_PARAM
+from syncronous.utils import get_soup, get_pages_count, write_tmp_soup
 
 
 class Product:
@@ -20,7 +21,7 @@ class Product:
 		Item.soup = list_soup
 		title = list_soup.find('div', 'n-snippet-card2__title')
 		Item.name = title.a['title']
-		href = requests.utils.urlparse(title.a['href'])
+		href = urlparse(title.a['href'])
 		Item.detail_url = 'https://market.yandex.ru{path}/spec?{query}'.format(path=href.path, query=href.query)
 		Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
 		Item._get_prices(list_soup.find_all('div', 'price'))
