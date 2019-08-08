@@ -87,7 +87,8 @@ class Product:
 
 	@staticmethod
 	def process_price(price):
-		return price.strip('₽').strip()
+		return int(price.strip('от₽  ').replace(' ', ''))
+		# return price.strip('₽').strip()
 		# return price.split()[0]
 
 	@cached_property

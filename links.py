@@ -11,8 +11,6 @@ from models import ProductModel, ReviewModel, Session
 # html = browser.page_source
 from utils import get_soup, get_pages_count, IsRedirectError
 
-link_set = json.load(open('link_set.json', 'r', encoding='utf8'))
-
 
 def download_item(soup, category_name=None):
 	session = Session()
@@ -37,9 +35,7 @@ def download_item(soup, category_name=None):
 		db_product.final_price = product.final_price
 
 
-		# db_product = ProductModel(**product.model_data, category_description=category_name)
 		session.add(db_product)
-		# print('len', len(product.reviews), product.review_number)
 		for rv in product.reviews:
 			db_review = ReviewModel(**rv.model_data, product=db_product)
 			session.add(db_review)
@@ -51,7 +47,7 @@ def download_item(soup, category_name=None):
 			logger.critical(f'Integrity error for category_name: {product.name}#{product.id}')
 			session.rollback()
 			session.flush()
-			logger.critical('For test purposes continue...')
+			# logger.critical('For test purposes continue...')
 			# raise e
 	print('LOOP END')
 
@@ -80,6 +76,7 @@ def download_list(url_object):
 
 
 if __name__ == '__main__':
+	link_set = json.load(open('link_set.json', 'r', encoding='utf8'))
 	logger.info('START\n')
 	while link_set:
 		url_object_form_json = link_set.pop()

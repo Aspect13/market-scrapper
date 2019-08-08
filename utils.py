@@ -32,8 +32,8 @@ def get_data(url):
 		json.dump(cache_dict, open(cache_dict_file, 'w'))
 	else:
 		try:
-			contents = open('{}/{}'.format(CACHED_FOLDER, file_name), 'r').read()
-			logger.info('Using cached: {} for url: {}'.format(file_name, url))
+			contents = open(f'{CACHED_FOLDER}/{file_name}', 'r').read()
+			logger.info(f'Using cached: {file_name} for url: {url}')
 		except FileNotFoundError:
 			del cache_dict[url]
 			json.dump(cache_dict, open(cache_dict_file, 'w'))
