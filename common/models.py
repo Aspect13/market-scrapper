@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-engine = create_engine('sqlite:///my_db.sqlite', echo=__name__ == '__main__')
+engine = create_engine('sqlite:///../my_db.sqlite', echo=__name__ == '__main__')
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 

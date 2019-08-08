@@ -35,3 +35,7 @@ _HEADERS = {
 def HEADERS():
 	_HEADERS.update({'User-Agent': ua.random})
 	return _HEADERS
+
+
+# excel export
+EXCEL_WB_PATH = '../IOs/market_dump.xlsx'
