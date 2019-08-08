@@ -12,14 +12,15 @@ CACHED_FOLDER = 'cached'
 
 
 class IsRedirectError(Exception):
-	def __init__(self, *args, **kwargs):
-		print('IsRedirectError', args, kwargs)
-	strerror = 'Link is a redirect'
+	# def __init__(self, *args, **kwargs):
+	# 	print('IsRedirectError', args, kwargs)
+	# 	pass
+	msg = 'Link is a redirect'
 
 
 def get_data(url):
 	if is_redirect(url):
-		logger.critical(f'URL is a redirect: {url}')
+		logger.warning(f'URL is a redirect: {url}')
 		raise IsRedirectError
 	cache_dict_file = 'cache_dict.json'
 	cache_dict = json.load(open(cache_dict_file, 'r'))
@@ -47,11 +48,13 @@ def cache_html(url, name, attempts=1):
 	if attempts > MAX_GET_ATTEMPTS:
 		logger.critical(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
 		raise TimeoutError(f'Tried {MAX_GET_ATTEMPTS} times to get URL {url}')
-	logger.info(f'GETting: {url}')
-	logger.info(f'attempt: {attempts}')
+	logger.info(f'GET: {url}')
+	if attempts > 1:
+		logger.info(f'attempt: {attempts}')
 	site = requests.get(url)
+	site.encoding = 'utf-8'
 	if is_captcha(site.content):
-		logger.warning(f'!!! Got captcha for url: {url}')
+		logger.warning(f'Captcha received for url: {url}')
 		logger.warning(f'sleeping for {TIMEOUT_SEC}s...')
 		sleep(TIMEOUT_SEC)
 		return cache_html(url, name, attempts=attempts+1)

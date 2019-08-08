@@ -14,27 +14,54 @@ PAGE_PARAM = 'page={}'
 
 
 class Product:
-	def __init__(self, *, list_soup=None, detail_url=None):
-		assert list_soup or detail_url
+	@classmethod
+	def from_list_soup(cls, list_soup):
+		Item = cls()
+		Item.soup = list_soup
+		title = list_soup.find('div', 'n-snippet-card2__title')
+		Item.name = title.a['title']
+		href = requests.utils.urlparse(title.a['href'])
+		Item.detail_url = 'https://market.yandex.ru{path}/spec?{query}'.format(path=href.path, query=href.query)
+		Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
+		Item._get_prices(list_soup.find_all('div', 'price'))
+		Item._get_reviews()
+		return Item
+
+	@classmethod
+	def from_detail_url(cls, url):
+		Item = cls()
+		Item.detail_url = url
+		Item.soup = Item.details
+		Item.name = Item.details.find('h1', 'title').string
+		Item.id = json.loads(Item.details.find('div', 'n-product-headline')['data-bem'])['n-product-headline']
+		Item._get_prices(*[i.find_all('', 'price') for i in Item.details.find_all('div', 'n-product-default-offer', )])
+		Item._get_reviews()
+		return Item
+
+	@classmethod
+	def from_other_shop(cls, list_soup):
+		Item = cls()
+		Item.soup = list_soup
+		title = list_soup.find('div', 'n-snippet-card2__title')
+		Item.name = title.a['title']
+		Item.detail_url = f'https:{title.a["href"]}'
+		# Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
+		Item.id = list_soup['id']
+		Item._get_prices(list_soup.find_all('div', 'price'))
+		# Item._get_reviews()
+		return Item
+
+	def __init__(self):
+		# assert list_soup or detail_url
+		self.detail_url = None
 
 		self.original_price = None
 		self.final_price = None
 
-		if detail_url:
-			self.detail_url = detail_url
-			self.soup = self.details
-			self.name = self.details.find('h1', 'title').string
-			self.id = json.loads(self.details.find('div', 'n-product-headline')['data-bem'])['n-product-headline']
-			self._get_prices(*[i.find_all('', 'price') for i in self.details.find_all('div', 'n-product-default-offer',)])
-		elif list_soup:
-			self.soup = list_soup
-			title = self.soup.find('div', 'n-snippet-card2__title')
-			self.name = title.a['title']
-			href = requests.utils.urlparse(title.a['href'])
-			self.detail_url = 'https://market.yandex.ru{path}/spec?{query}'.format(path=href.path, query=href.query)
-			self.id = json.loads(self.soup['data-bem'])['n-snippet-card2']['modelId']
-			self._get_prices(self.soup.find_all('div', 'price'))
+		self.review_url = None
+		self.review_number = 0
 
+	def _get_reviews(self):
 		self.review_url = self.detail_url.replace('/spec', '/reviews')
 		try:
 			self.review_number = int(self.details.find('a', 'reviews').string.split()[0])
@@ -71,16 +98,16 @@ class Product:
 	def specs(self):
 		return Specs(self.details.find_all('dl', 'n-product-spec'))
 
-	@property
-	def model_data(self):
-		return {
-			'yandex_id': self.id,
-			'name': self.name,
-			'detail_url': self.detail_url,
-			'original_price': self.original_price,
-			'final_price': self.final_price,
-			'specs': str(self.specs),
-		}
+	# @property
+	# def model_data(self):
+	# 	return {
+	# 		'yandex_id': self.id,
+	# 		'name': self.name,
+	# 		'detail_url': self.detail_url,
+	# 		'original_price': self.original_price,
+	# 		'final_price': self.final_price,
+	# 		'specs': str(self.specs),
+	# 	}
 
 	def __repr__(self):
 		d = self.__dict__.copy()
@@ -90,7 +117,6 @@ class Product:
 			URL: {detail_url}
 			Prices: {original_price}, {final_price}
 			Reviews: {review_number}
-			\tSpecs: [{specs}]
 		'''.format(**d)
 		# '''.format(**self.__dict__, specs=repr(self.specs))
 

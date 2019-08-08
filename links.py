@@ -20,27 +20,24 @@ def download_item(soup, category_name=None):
 
 	logger.debug('download_item got {} items'.format(len(product_list)))
 
-	# todo: remove section
-	# print('remove section')
-	# product = Product(
-	# 	detail_url='https://market.yandex.ru/product--barilla-makarony-spaghetti-n-5-500-g/152406314/spec?track=tabs')
-	# db_product = ProductModel(**product.model_data, category_description=category_name)
-	# session.add(db_product)
-	# print('len', len(product.reviews), product.review_number)
-	# for rv in product.reviews:
-	# 	db_review = ReviewModel(**rv.model_data, product=db_product)
-	# 	print(db_review)
-	# 	session.add(db_review)
-	# session.commit()
-	# print('remove section')
-
 	for i in product_list:
-
+		db_product = ProductModel(category_description=category_name)
 		try:
-			product = Product(list_soup=i)
+			product = Product.from_list_soup(list_soup=i)
+			db_product.specs = str(product.specs)
+			db_product.yandex_id = product.id
 		except IsRedirectError:
-			logger.critical(f'Redirect error for category: {category_name}, {str(i)[:20]}')
-		db_product = ProductModel(**product.model_data, category_description=category_name)
+			logger.warning(f'Product is from other shop: {category_name}, {str(i)[:20]}')
+			product = Product.from_other_shop(list_soup=i)
+			db_product.other_shop = True
+			db_product.other_shop_id = product.id
+		db_product.name = product.name
+		db_product.detail_url = product.detail_url
+		db_product.original_price = product.original_price
+		db_product.final_price = product.final_price
+
+
+		# db_product = ProductModel(**product.model_data, category_description=category_name)
 		session.add(db_product)
 		# print('len', len(product.reviews), product.review_number)
 		for rv in product.reviews:
@@ -50,7 +47,8 @@ def download_item(soup, category_name=None):
 		try:
 			session.commit()
 		except IntegrityError as e:
-			logger.critical(f'Integrity error for category_name: {category_name} {product.name}#{product.id} {product.detail_url}')
+			logger.critical(f'Integrity error for category_name: {category_name} {product.detail_url}')
+			logger.critical(f'Integrity error for category_name: {product.name}#{product.id}')
 			session.rollback()
 			session.flush()
 			logger.critical('For test purposes continue...')
@@ -74,16 +72,16 @@ def download_list(url_object):
 	for page_num in range(2, pages_count + 1):
 		logger.debug(f'download_list::getting data from page {page_num}')
 		new_url = '{}&{}'.format(url, PAGE_PARAM.format(page_num))
-		try: #todo: remove all tries like that
-			soup = get_soup(new_url)
-			download_item(soup, category_name)
-		except Exception as e:
-			logger.critical(f'Some {e.args} happened to ur {new_url} :: 79')
+		# try: #todo: remove all tries like that
+		soup = get_soup(new_url)
+		download_item(soup, category_name)
+		# except Exception as e:
+		# 	logger.critical(f'Some {e.args} happened to ur {new_url} :: 82')
 
 
 if __name__ == '__main__':
 	logger.info('START\n')
 	while link_set:
 		url_object_form_json = link_set.pop()
-		print('url_object_form_json', url_object_form_json)
+		logger.debug(f'url_object_form_json {str(url_object_form_json)}')
 		download_list(url_object_form_json)

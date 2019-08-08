@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateTime, Date
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateTime, Date, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -16,13 +16,18 @@ class ProductModel(Base):
 	date_added = Column(DateTime, default=datetime.datetime.now)
 
 	category_description = Column(String(256), nullable=True)
-	yandex_id = Column(Integer, unique=True, nullable=False)
+	yandex_id = Column(Integer, unique=True, nullable=True)
+
 	name = Column(String(128), nullable=False)
 	detail_url = Column(String(512), nullable=False, unique=True)
 	original_price = Column(Integer, nullable=True)
 	final_price = Column(Integer, nullable=True)
 	specs = Column(String(1024), nullable=True)
 	reviews = relationship('ReviewModel', back_populates='product')
+
+	other_shop = Column(Boolean, default=False, nullable=False)
+	other_shop_id = Column(String(128), nullable=True)
+	other_shop_url = Column(String(512), nullable=True, unique=True)
 
 	def __repr__(self):
 		return '<ProductModel id={id} name={name}>'.format(id=self.id, name=self.name)
