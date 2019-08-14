@@ -5,10 +5,8 @@ from bs4 import BeautifulSoup
 from uuid import uuid4
 from time import sleep
 
-from fake_useragent import UserAgent
-
 from common.logger_custom import logger
-from common.settings import CACHE_DICT_PATH, CACHED_FOLDER, MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, HEADERS
+from settings import CACHE_DICT_PATH, CACHED_FOLDER, MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, HEADERS
 
 
 class IsRedirectError(Exception):

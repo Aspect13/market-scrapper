@@ -6,7 +6,7 @@ from pip._internal.utils.misc import cached_property
 
 from asyncronous.utils import get_soup, get_pages_count, write_tmp_soup
 from common.logger_custom import logger
-from common.settings import PAGE_PARAM
+from settings import PAGE_PARAM
 
 
 class Product:

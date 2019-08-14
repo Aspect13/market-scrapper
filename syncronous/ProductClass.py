@@ -10,7 +10,7 @@ from common.logger_custom import logger
 
 # import locale
 # locale.setlocale(locale.LC_TIME, ('RU', 'UTF8'))
-from common.settings import PAGE_PARAM
+from settings import PAGE_PARAM
 from syncronous.utils import get_soup, get_pages_count, write_tmp_soup
 
 

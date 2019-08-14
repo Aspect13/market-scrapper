@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from common.logger_custom import logger
 from common.models import ProductModel, ReviewModel, Session
 from asyncronous.utils import get_soup, get_pages_count, IsRedirectError
-from common.settings import PAGE_PARAM, LINK_SET_PATH
+from settings import PAGE_PARAM, LINK_SET_PATH
 from asyncronous.ProductClass import Product
 
 

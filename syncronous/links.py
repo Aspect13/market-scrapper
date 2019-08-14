@@ -2,7 +2,7 @@ import json
 
 from sqlalchemy.exc import IntegrityError
 
-from common.settings import LINK_SET_PATH
+from settings import LINK_SET_PATH
 from syncronous.ProductClass import Product, PAGE_PARAM
 from common.logger_custom import logger
 from common.models import ProductModel, ReviewModel, Session

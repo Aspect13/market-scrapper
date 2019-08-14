@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from uuid import uuid4
 
 from common.logger_custom import logger
-from common.settings import MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, CACHE_DICT_PATH, CACHED_FOLDER, HEADERS
+from settings import MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, CACHE_DICT_PATH, CACHED_FOLDER, HEADERS
 
 
 class IsRedirectError(Exception):

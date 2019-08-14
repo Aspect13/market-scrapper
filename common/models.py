@@ -1,10 +1,15 @@
 import datetime
+import json
+from pathlib import Path
 
 from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateTime, Date, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-engine = create_engine('sqlite:///../my_db.sqlite', echo=__name__ == '__main__')
+from common.misc import pathify
+from settings import DB_PATH, LINK_SET_PATH, CACHE_DICT_PATH, CACHED_FOLDER
+
+engine = create_engine(f'sqlite:///{DB_PATH}', echo=__name__ == '__main__')
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
@@ -29,6 +34,26 @@ class ProductModel(Base):
 	other_shop_id = Column(String(128), nullable=True)
 	other_shop_url = Column(String(512), nullable=True, unique=True)
 
+	@property
+	def list_url(self):
+		link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
+		x = filter(lambda i: i['category_name'] == self.category_description, link_set)
+		return list(x)[0]['url']
+
+	@property
+	def list_cache(self):
+		return self.get_cache_path(self.list_url)
+
+	@property
+	def detail_cache(self):
+		return self.get_cache_path(self.detail_url)
+
+	@staticmethod
+	@pathify(CACHED_FOLDER)
+	def get_cache_path(url):
+		cache_dict = json.load(open(CACHE_DICT_PATH, 'r'))
+		return cache_dict.get(url, 'NO CACHE FOR THIS URL')
+
 	def __repr__(self):
 		return '<ProductModel id={id} name={name}>'.format(id=self.id, name=self.name)
 
@@ -51,5 +76,15 @@ class ReviewModel(Base):
 		return '<ReviewModel id={id} date={date} product={product_id}>'.format(**self.__dict__, id=self.id, product_id=self.product_id)
 
 
+
+
+
 if __name__ == '__main__':
-	Base.metadata.create_all(engine)
+	@pathify(CACHED_FOLDER)
+	def tst(qqq='123'):
+		print('inside', qqq)
+		return ProductModel.get_cache_path(qqq)
+	# Base.metadata.create_all(engine)
+	x = tst()
+	print(x)
+
