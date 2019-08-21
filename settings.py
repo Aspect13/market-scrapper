@@ -2,24 +2,33 @@ from fake_useragent import UserAgent # pip install fake-useragent
 from pathlib import Path
 ROOT_DIR = Path(__file__).parent.absolute()
 
-#cache_html
+# cache_html
 MAX_GET_ATTEMPTS = 15
 TIMEOUT_SEC = 10
 
-#product class
+# product class
 PAGE_PARAM = 'page={}'
 
-#links.py
+# links.py
 IO_PATH = Path.joinpath(ROOT_DIR, 'IOs')
 LINK_SET_PATH = Path.joinpath(IO_PATH, 'link_set.json')
 CACHED_FOLDER = Path.joinpath(ROOT_DIR, 'cached')
 CACHE_DICT_PATH = Path.joinpath(IO_PATH, 'cache_dict.json')
 SITECACHE_PATH = Path.joinpath(IO_PATH, 'sitecache.html')
 DB_PATH = Path.joinpath(ROOT_DIR, 'my_db.sqlite')
-# excel export
-EXCEL_WB_PATH = lambda index: EXCEL_WB_PATH(index=index+1) if Path.exists(Path.joinpath(IO_PATH, f'market_dump{index}.xlsx')) else Path.joinpath(IO_PATH, f'market_dump{index}.xlsx')
 
-#utils
+
+# excel export
+def EXCEL_WB_PATH(suffix=None, index=0):
+	file_name = f'market_dump{suffix}_{index}'
+	if Path.exists(Path.joinpath(IO_PATH, f'{file_name}.xlsx')):
+		new_index = int(file_name.split('_')[-1]) + 1
+		return EXCEL_WB_PATH(suffix, new_index)
+	else:
+		return Path.joinpath(IO_PATH, f'{file_name}.xlsx')
+
+
+# utils
 # HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 class HEADERS(dict):
 	_ua = None
