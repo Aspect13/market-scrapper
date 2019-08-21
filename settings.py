@@ -1,4 +1,4 @@
-from fake_useragent import UserAgent
+from fake_useragent import UserAgent # pip install fake-useragent
 from pathlib import Path
 ROOT_DIR = Path(__file__).parent.absolute()
 
@@ -10,12 +10,14 @@ TIMEOUT_SEC = 10
 PAGE_PARAM = 'page={}'
 
 #links.py
-LINK_SET_PATH = Path.joinpath(ROOT_DIR, 'IOs', 'link_set.json')
+IO_PATH = Path.joinpath(ROOT_DIR, 'IOs')
+LINK_SET_PATH = Path.joinpath(IO_PATH, 'link_set.json')
 CACHED_FOLDER = Path.joinpath(ROOT_DIR, 'cached')
-CACHE_DICT_PATH = Path.joinpath(ROOT_DIR, 'IOs', 'cache_dict.json')
-SITECACHE_PATH = Path.joinpath(ROOT_DIR, 'IOs', 'sitecache.html')
+CACHE_DICT_PATH = Path.joinpath(IO_PATH, 'cache_dict.json')
+SITECACHE_PATH = Path.joinpath(IO_PATH, 'sitecache.html')
 DB_PATH = Path.joinpath(ROOT_DIR, 'my_db.sqlite')
-
+# excel export
+EXCEL_WB_PATH = lambda index: EXCEL_WB_PATH(index=index+1) if Path.exists(Path.joinpath(IO_PATH, f'market_dump{index}.xlsx')) else Path.joinpath(IO_PATH, f'market_dump{index}.xlsx')
 
 #utils
 # HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
@@ -27,7 +29,7 @@ class HEADERS(dict):
 			'Accept-Language': 'en-US,en;q=0.9,ru-RU;q=0.8,ru;q=0.7',
 			'Cache-Control': 'max-age=0',
 			'Connection': 'keep-alive',
-			'Cookie': 'yandexuid=66768161542820144; _ym_uid=15470668491035248607; mda=0; my=YwA=; L=Vg5qWlJTaEYEUXdRaHBISWwGUkZAfllaLAFBUD1GNmUsIjsmHgkxQw==.1560425001.13895.32511.6d7f0800b84fe5ad8d9fb58a5470ff12; yandex_login=insense-insights; i=sqYepcpOgHj3FDLbSa6q/BOs6rkpYwQ/tA1QnMbUgc1OMRAtZNG5RC0Y0pfmJvL2RosYkV/eoXvnww+MXGT8r5LvetM=; currentRegionId=213; fuid01=5d25fc545a682083.0ijTUSuGThKRwW24tcNbJrbVzjyIKyxS0i52QOUbGcKISAB5DXX9onryQ-cOflBE2eXdVhJjtfn1F8bAPCChVKp1kl6aK2CEx1p9XJe9J_C5AxIEtAQHUUvq5rjZi4Jd; currentRegionName=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D1%83; yp=1574394535.szm.1:1600x900:1600x770#1875785001.udn.cDppbnNlbnNlLWluc2lnaHRz#1595500845.yrts.1563964845#1858180170.yrtsi.1542820170#1567252407.ygu.1; yandex_gid=213; bltsr=1; EIXtkCTlX=1; yabs-frequency=/4/0000000000000000/vezoSAms8Hg-FMsiDYS0/; zm=m-white_bender.webp.css-https%3As3home-static_hUP0kziUfLzpe0NLvqqXcbftIqc%3Ac; Session_id=3:1565105496.5.0.1560425001001:5y0nLg:20.1|870775430.0.2|203237.267840.h8ayKMxsGF51T-9e5Ppe-mwFZYA; sessionid2=3:1565105496.5.0.1560425001001:5y0nLg:20.1|870775430.0.2|203237.954346.lq_MeZB4VzQsnMpsXwS-aY6Oq_w; _ym_uid=15470668491035248607; _ym_d=1565105499; sber-bonus-popup-viewed=1; novelty-badge-filter-payments=-1; categoryQA=1; oChC=1; oChD=1; ys=svt.1; uid=AABbhl1MaMG0DABMBgtuAg==; first_visit_time=2019-08-08T21%3A24%3A02%2B03%3A00; fonts-loaded=1; _ym_isad=1; js=1; yandexmarket=48; visits=1562770513-1565213501-1565298126; parent_reqid_seq=57c0926830a7dcbee7f1d0897a0d2bf8%2C569a0c487aa922c0de8d57b566943732%2C3cbb7dc658f7357632677ba6e5730697%2C1e9c8a328e11cb31076d1179037cccbc%2C1445894cf2761f831eaf8c197cb340e4; HISTORY_AUTH_SESSION=1c7b228; _ym_visorc_160656=b; _ym_visorc_45411513=b',
+			'Cookie': 'yandexuid=3179560611566253940; yuidss=3179560611566253940; _ym_wasSynced=%7B%22time%22%3A1566262053967%2C%22params%22%3A%7B%22eu%22%3A0%7D%2C%22bkParams%22%3A%7B%7D%7D; _ym_uid=1566262054291930440; _ym_d=1566262054; mda=0; Session_id=3:1566262074.5.0.1566262074945:66f8bQ:1b.1|94495977.0.2|203879.874960.aIexdbn7uDm0ys4QhDGg7nV-bi4; sessionid2=3:1566262074.5.0.1566262074945:66f8bQ:1b.1|94495977.0.2|203879.942502.qErvb-YyX5wgxKnswZbLoJHFEPY; yp=1881613940.yrts.1566253940#1881613940.yrtsi.1566253940#1881622074.udn.cDpmb3J3ZWJjcmFw; L=XnsHR2lQc2BXVnp9Xm1cS3JAV3ZYQUsIIzU7HjNTBwtYAw==.1566262074.13963.311277.b383186ef7558369da91e3bd6ec9bff7; yandex_login=forwebcrap; i=LyfE9XTUEhlMFlTl2L40PdEKZ0X08Yf15Y9qbzE9Ad2rR3Q1aNsTpRB0XL7NofeN9hPpuZvA+Y0WBxs02Wgineg5/xY=; ys=svt.1; _ym_isad=1; _ym_visorc_784657=b; visits=1566345241-1566345241-1566345241; uid=AAAfaV1ciBmeVwDcEeqdAg==; js=1; novelty-badge-filter-payments=1566345241347; _ym_visorc_160656=b; _ym_visorc_45411513=b; first_visit_time=2019-08-21T02%3A54%3A05%2B03%3A00; fuid01=5d5c881b63f6b54c.hA5rOrGMyrakrdbZjbku11tSd3Keh4QQJXrepSqvQG-Jrmr8tNql45_T1laecTz8_Wrq2V9b0JJRJ2VzRPgwZFBLoxhyuGZydfiFddXsPxTaqqcv2SG1DQatS78jVYO1; yandexmarket=48; currentRegionId=213; currentRegionName=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D1%83; fonts-loaded=1; categoryQA=1; parent_reqid_seq=076188b8c58aa67a61163622b5d1abbd%2C04d296aaf076b96dc993112f4ffa72e8; HISTORY_AUTH_SESSION=19e2c543',
 			# 'DNT': '1',
 			# 'Host': 'market.yandex.ru',
 			# 'Sec-Fetch-Mode': 'navigate',
@@ -49,8 +51,7 @@ class HEADERS(dict):
 			self.reroll()
 
 
-# excel export
-EXCEL_WB_PATH = '../IOs/market_dump.xlsx'
+
 
 
 # if __name__ == '__main__':

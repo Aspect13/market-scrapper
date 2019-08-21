@@ -25,21 +25,20 @@ async def get_data(url):
 	if is_redirect(url):
 		logger.warning(f'URL is a redirect: {url}')
 		raise IsRedirectError
-	cache_dict_file = CACHE_DICT_PATH
-	cache_dict = json.load(open(cache_dict_file, 'r'))
+	cache_dict = json.load(open(CACHE_DICT_PATH, 'r'))
 	file_name = cache_dict.get(url, None)
 	if not file_name:
 		file_name = '{}.html'.format(str(uuid4())[:8])
 		contents = await cache_html(url, file_name)
 		cache_dict[url] = file_name
-		json.dump(cache_dict, open(cache_dict_file, 'w'))
+		json.dump(cache_dict, open(CACHE_DICT_PATH, 'w'))
 	else:
 		try:
 			contents = open(f'{CACHED_FOLDER}/{file_name}', 'r').read()
 			logger.info(f'Using cached: {file_name} for url: {url}')
 		except FileNotFoundError:
 			del cache_dict[url]
-			json.dump(cache_dict, open(cache_dict_file, 'w'))
+			json.dump(cache_dict, open(CACHE_DICT_PATH, 'w'))
 			return await get_data(url)
 	return contents
 

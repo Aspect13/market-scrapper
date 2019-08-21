@@ -1,17 +1,22 @@
 import datetime
 import json
+import re
 from pathlib import Path
 
+from pip._internal.utils.misc import cached_property
 from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateTime, Date, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from common.misc import pathify
+from common.misc import pathify, get_cache_dict
 from settings import DB_PATH, LINK_SET_PATH, CACHE_DICT_PATH, CACHED_FOLDER
 
 engine = create_engine(f'sqlite:///{DB_PATH}', echo=__name__ == '__main__')
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
+
+
+WEIGHT_PATTERN = re.compile(r' (\d+) г', re.UNICODE)
 
 
 class ProductModel(Base):
@@ -51,8 +56,32 @@ class ProductModel(Base):
 	@staticmethod
 	@pathify(CACHED_FOLDER)
 	def get_cache_path(url):
-		cache_dict = json.load(open(CACHE_DICT_PATH, 'r'))
+		cache_dict = get_cache_dict()
 		return cache_dict.get(url, 'NO CACHE FOR THIS URL')
+
+	@staticmethod
+	def get_weight_from_name(name):
+		m = re.findall(WEIGHT_PATTERN, name)
+		try:
+			return int(m[0])
+		except IndexError:
+			return
+
+	@cached_property
+	def weight(self):
+		return self.get_weight_from_name(self.name)
+
+	@property
+	def price_for_100_original(self):
+		if self.weight:
+			return int(self.original_price) / self.weight * 100
+		return
+
+	@property
+	def price_for_100_final(self):
+		if self.weight:
+			return int(self.final_price) / self.weight * 100
+		return
 
 	def __repr__(self):
 		return '<ProductModel id={id} name={name}>'.format(id=self.id, name=self.name)
@@ -73,18 +102,11 @@ class ReviewModel(Base):
 	product = relationship('ProductModel', back_populates='reviews')
 
 	def __repr__(self):
-		return '<ReviewModel id={id} date={date} product={product_id}>'.format(**self.__dict__, id=self.id, product_id=self.product_id)
-
-
-
+		return '<ReviewModel id={id} date={date} product={product_id}>'.format(
+			**self.__dict__, id=self.id, product_id=self.product_id
+		)
 
 
 if __name__ == '__main__':
-	@pathify(CACHED_FOLDER)
-	def tst(qqq='123'):
-		print('inside', qqq)
-		return ProductModel.get_cache_path(qqq)
-	# Base.metadata.create_all(engine)
-	x = tst()
-	print(x)
+	Base.metadata.create_all(engine)
 

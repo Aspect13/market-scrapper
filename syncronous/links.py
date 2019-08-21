@@ -1,4 +1,5 @@
 import json
+import random
 
 from sqlalchemy.exc import IntegrityError
 
@@ -34,6 +35,7 @@ def download_item(soup, category_name=None):
 		db_product.detail_url = product.detail_url
 		db_product.original_price = product.original_price
 		db_product.final_price = product.final_price
+
 
 
 		session.add(db_product)
@@ -77,9 +79,30 @@ def download_list(url_object):
 
 
 if __name__ == '__main__':
-	link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
+	try:
+		link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
+		print(link_set)
+		assert link_set
+	except (FileNotFoundError, AssertionError):
+		try:
+			from openpyxl import load_workbook
+			from settings import IO_PATH
+			wb = load_workbook(f'{IO_PATH}\link_set.xlsx')
+			ws = wb.active
+			link_set = []
+			for row in ws.iter_rows(min_row=2):
+				item = {
+					'category_name': row[0].value,
+					'url': row[1].value
+				}
+				link_set.append(item)
+		except FileNotFoundError:
+			logger.critical('No link set provided')
+			raise FileNotFoundError
+
 	# link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
 	logger.info('START\n')
+	random.shuffle(link_set)
 	while link_set:
 		url_object_form_json = link_set.pop()
 		logger.debug(f'url_object_form_json {str(url_object_form_json)}')

@@ -4,8 +4,10 @@ import json
 from bs4 import BeautifulSoup
 from uuid import uuid4
 from time import sleep
+from pathlib import Path
 
 from common.logger_custom import logger
+from common.misc import get_cache_dict
 from settings import CACHE_DICT_PATH, CACHED_FOLDER, MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, HEADERS
 
 
@@ -20,21 +22,20 @@ def get_data(url):
 	if is_redirect(url):
 		logger.warning(f'URL is a redirect: {url}')
 		raise IsRedirectError
-	cache_dict_file = CACHE_DICT_PATH
-	cache_dict = json.load(open(cache_dict_file, 'r'))
+	cache_dict = get_cache_dict()
 	file_name = cache_dict.get(url, None)
 	if not file_name:
 		file_name = '{}.html'.format(str(uuid4())[:8])
 		contents = cache_html(url, file_name)
 		cache_dict[url] = file_name
-		json.dump(cache_dict, open(cache_dict_file, 'w'))
+		json.dump(cache_dict, open(CACHE_DICT_PATH, 'w'))
 	else:
 		try:
 			contents = open(f'{CACHED_FOLDER}/{file_name}', 'r').read()
 			logger.info(f'Using cached: {file_name} for url: {url}')
 		except FileNotFoundError:
 			del cache_dict[url]
-			json.dump(cache_dict, open(cache_dict_file, 'w'))
+			json.dump(cache_dict, open(CACHE_DICT_PATH, 'w'))
 			return get_data(url)
 	return contents
 
@@ -59,8 +60,15 @@ def cache_html(url, name, attempts=1):
 		logger.warning(f'sleeping for {TIMEOUT_SEC * attempts}s...')
 		sleep(TIMEOUT_SEC * attempts)
 		return cache_html(url, name, attempts=attempts+1)
-	with open(f'{CACHED_FOLDER}/{name}', 'wb') as out:
-		out.write(site.content)
+
+	try:
+		with open(Path(CACHED_FOLDER, name), 'wb') as out:
+			out.write(site.content)
+	except FileNotFoundError:
+		import os
+		os.mkdir(CACHED_FOLDER)
+		with open(Path(CACHED_FOLDER, name), 'wb') as out:
+			out.write(site.content)
 	logger.info(f'Cache name: {name}')
 	return site.content
 
