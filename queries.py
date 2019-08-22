@@ -6,31 +6,22 @@ sess = Session()
 
 
 q1 = sess.query(ProductModel).filter(ProductModel.name.ilike('%Crich с оливковым%')).first()
-q1 = sess.query(ProductModel).filter(ProductModel.id == 156).first()
-
-print(q1)
-print(q1.list_url)
-print(q1.list_cache)
-print(q1.detail_url)
-print(q1.detail_cache)
+q2 = sess.query(ProductModel).filter(ProductModel.id == 156).first()
 
 
-q2 = sess.query(ProductModel).filter(ProductModel.specs.ilike('%пше%')).limit(5).all()
-from sqlalchemy import or_
 
-conditions = []
-for name in ['пшен', 'полб']:
-    conditions.append(ProductModel.specs.ilike(f'%{name}%'))
+q3 = sess.query(ProductModel).filter(ProductModel.specs.ilike('%пше%')).limit(5).all()
 
-q3 = sess.query(ProductModel).filter(
-    ~or_(*conditions)
-)
 
-patt = re.compile(r' (\d+) г', re.UNICODE)
-for i in q3:
-	print(i.name)
-	x = re.findall(patt, i.name)
-	try:
-		print(int(x[0]))
-	except IndexError:
-		print(None)
+q = sess.query(ProductModel).filter(ProductModel.other_shop == True).first()
+
+q = sess.query(ProductModel).filter(ProductModel.detail_url == 'https://market.yandex.ru/product--pechene-schar-savoiardi-150-g/174208605/spec?show-uid=15663494825616024412116001&nid=73849&glfilter=16242946%3A16242947&context=search').first()
+# q = sess.query(ProductModel).filter(ProductModel.img_url != None).first()
+print(q)
+print('q.list_url: ', q.list_url)
+print('q.list_cache: ', q.list_cache)
+print('q.detail_url: ', q.detail_url)
+print('q.detail_cache: ', q.detail_cache)
+print('q.img_url: ', q.img_url)
+
+

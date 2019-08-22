@@ -1,6 +1,7 @@
 /.idea/
 /venv/
 /cached/
+/img_cache/
 cache_dict.json
 link_set.json
 *.log

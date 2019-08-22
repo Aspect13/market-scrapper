@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from common.misc import pathify, get_cache_dict
+from common.misc import pathify, get_cache_dict, get_link_set
 from settings import DB_PATH, LINK_SET_PATH, CACHE_DICT_PATH, CACHED_FOLDER
 
 engine = create_engine(f'sqlite:///{DB_PATH}', echo=__name__ == '__main__')
@@ -39,11 +39,14 @@ class ProductModel(Base):
 	other_shop_id = Column(String(128), nullable=True)
 	other_shop_url = Column(String(512), nullable=True, unique=True)
 
+	img_url = Column(String(256), nullable=False,)
+	img_local_path = Column(String(256), nullable=True)
+
 	@property
 	def list_url(self):
-		link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
+		link_set = get_link_set()
 		x = filter(lambda i: i['category_name'] == self.category_description, link_set)
-		return list(x)[0]['url']
+		return next(x, {}).get('url')
 
 	@property
 	def list_cache(self):
@@ -104,6 +107,21 @@ class ReviewModel(Base):
 	def __repr__(self):
 		return '<ReviewModel id={id} date={date} product={product_id}>'.format(
 			**self.__dict__, id=self.id, product_id=self.product_id
+		)
+
+
+class CachedHtml(Base):
+	__tablename__ = 'cached_html'
+
+	id = Column(Integer, primary_key=True)
+
+	url = Column(String(512), nullable=False, unique=True)
+	file_name = Column(String(128), nullable=False, unique=True)
+	date_added = Column(DateTime, default=datetime.datetime.now)
+
+	def __repr__(self):
+		return '<CachedHtml id={id} date={date} file_name={file_name} url={url}>'.format(
+			**self.__dict__, id=self.id
 		)
 
 

@@ -13,6 +13,7 @@ PAGE_PARAM = 'page={}'
 IO_PATH = Path.joinpath(ROOT_DIR, 'IOs')
 LINK_SET_PATH = Path.joinpath(IO_PATH, 'link_set.json')
 CACHED_FOLDER = Path.joinpath(ROOT_DIR, 'cached')
+IMG_CACHE_FOLDER_RELATIVE = Path('img_cache')
 CACHE_DICT_PATH = Path.joinpath(IO_PATH, 'cache_dict.json')
 SITECACHE_PATH = Path.joinpath(IO_PATH, 'sitecache.html')
 DB_PATH = Path.joinpath(ROOT_DIR, 'my_db.sqlite')

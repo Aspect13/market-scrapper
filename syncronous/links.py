@@ -3,6 +3,7 @@ import random
 
 from sqlalchemy.exc import IntegrityError
 
+from common.misc import get_link_set
 from settings import LINK_SET_PATH
 from syncronous.ProductClass import Product, PAGE_PARAM
 from common.logger_custom import logger
@@ -36,7 +37,14 @@ def download_item(soup, category_name=None):
 		db_product.original_price = product.original_price
 		db_product.final_price = product.final_price
 
+		tmp = session.query(ProductModel).filter(ProductModel.detail_url == product.detail_url).first() # todo: remove
+		if tmp:
+			db_product = tmp
+		db_product.img_url = product.img_url
 
+		if DOWNLOAD_IMAGES:
+			local_img_path = product.download_image(name=db_product.id)
+			db_product.img_local_path = str(local_img_path)
 
 		session.add(db_product)
 		for rv in product.reviews:
@@ -52,6 +60,7 @@ def download_item(soup, category_name=None):
 			session.flush()
 			# logger.critical('For test purposes continue...')
 			# raise e
+
 	print('LOOP END')
 
 
@@ -79,30 +88,11 @@ def download_list(url_object):
 
 
 if __name__ == '__main__':
-	try:
-		link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
-		print(link_set)
-		assert link_set
-	except (FileNotFoundError, AssertionError):
-		try:
-			from openpyxl import load_workbook
-			from settings import IO_PATH
-			wb = load_workbook(f'{IO_PATH}\link_set.xlsx')
-			ws = wb.active
-			link_set = []
-			for row in ws.iter_rows(min_row=2):
-				item = {
-					'category_name': row[0].value,
-					'url': row[1].value
-				}
-				link_set.append(item)
-		except FileNotFoundError:
-			logger.critical('No link set provided')
-			raise FileNotFoundError
-
+	link_set = get_link_set()
 	# link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
 	logger.info('START\n')
 	random.shuffle(link_set)
+	DOWNLOAD_IMAGES = input('Download images? (Y/N)\n').lower() == 'y'
 	while link_set:
 		url_object_form_json = link_set.pop()
 		logger.debug(f'url_object_form_json {str(url_object_form_json)}')

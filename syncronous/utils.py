@@ -6,9 +6,12 @@ from uuid import uuid4
 from time import sleep
 from pathlib import Path
 
+from requests.exceptions import MissingSchema
+
 from common.logger_custom import logger
 from common.misc import get_cache_dict
-from settings import CACHE_DICT_PATH, CACHED_FOLDER, MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, HEADERS
+from settings import CACHE_DICT_PATH, CACHED_FOLDER, MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, HEADERS, \
+	IMG_CACHE_FOLDER_RELATIVE, ROOT_DIR
 
 
 class IsRedirectError(Exception):
@@ -83,7 +86,6 @@ def is_redirect(url):
 
 def get_soup(url):
 	site_data = get_data(url)
-	# site_data = get_data(url)
 	return BeautifulSoup(site_data, 'html.parser')
 
 
@@ -97,3 +99,67 @@ def get_pages_count(soup):
 def write_tmp_soup(soup):
 	with open(SITECACHE_PATH, 'w') as out:
 		out.write(soup.prettify())
+
+
+def check_img_downloaded(path):
+	from common.models import Session
+	from common.models import ProductModel
+	s = Session()
+	return s.query(ProductModel).filter(ProductModel.img_local_path == str(path)).first()
+
+
+def get_name_from_img_url(img_url):
+	name = None
+	for i in reversed(img_url.split('/')):
+		if '.' in i:
+			name = i
+			return name.split('.')[0]
+	if not name:
+		name = img_url.replace(r'/', '__')
+
+	return name
+
+
+def get_extention_from_url(url):
+	d = {
+		'.jpeg': 'jpeg',
+		'.png': 'png',
+		'.gif': 'gif'
+	}
+	for k, v in d.items():
+		if k in url:
+			return v
+	return 'jpg'
+
+
+def download_image(url, name=None):
+
+	# db_path_pattern = Path(IMG_CACHE_FOLDER_RELATIVE, name)
+
+	ext = get_extention_from_url(url)
+	if not name:
+		name = get_name_from_img_url(url)
+
+	assert name
+
+	try:
+		response = requests.get(url)
+	except MissingSchema:
+		response = requests.get(f'http:{url}')
+
+	full_name = f'{name}.{ext}'
+	tested_name = check_img_downloaded(full_name)
+	if not tested_name:
+		file_index = 1
+		save_path = Path(ROOT_DIR, IMG_CACHE_FOLDER_RELATIVE, full_name)
+		while save_path.exists():
+			logger.warning(f'Save path for img exists: {full_name}')
+			full_name = f'{name}_{file_index}.{ext}'
+			save_path = Path(ROOT_DIR, IMG_CACHE_FOLDER_RELATIVE, full_name)
+			file_index += 1
+
+		with open(save_path, 'wb') as out:
+			out.write(response.content)
+		return Path(IMG_CACHE_FOLDER_RELATIVE, full_name)
+	return tested_name.img_local_path
+

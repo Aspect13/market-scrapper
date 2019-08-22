@@ -20,6 +20,9 @@ def write_model_to_worksheet_all(wb, model, session):
 	ws.append(header)
 	for product in session.query(model).all():
 		data = list(map(product.__dict__.get, model.__table__.columns.keys()))
+
+		data = transform_field(data, model.__table__.columns.keys(), mutations)
+
 		data += [product.weight, product.price_for_100_original, product.price_for_100_final]
 		ws.append(data)
 
@@ -39,8 +42,28 @@ def write_model_to_worksheet_filtered(wb, model, session):
 
 	for product in q.all():
 		data = list(map(product.__dict__.get, model.__table__.columns.keys()))
+
+		# transform img_url
+		data = transform_field(data, model.__table__.columns.keys(), mutations)
+
 		data += [product.weight, product.price_for_100_original, product.price_for_100_final]
 		ws.append(data)
+
+
+def transform_img_url(url):
+	return f'http:{url}'
+
+
+def transform_img_local_path(path):
+	from os.path import sep
+	return path.split(sep)[-1]
+
+
+def transform_field(data, columns, field_func_dict):
+	for k, v in field_func_dict.items():
+		index = columns.index(k)
+		data[index] = v(data[index])
+	return data
 
 
 def write_model_to_worksheet_highlight(wb, model, session):
@@ -52,6 +75,10 @@ def write_model_to_worksheet_highlight(wb, model, session):
 	ws.append(header)
 	for product in session.query(model).all():
 		data = list(map(product.__dict__.get, model.__table__.columns.keys()))
+
+		#transform img_url
+		data = transform_field(data, model.__table__.columns.keys(), mutations)
+
 		data += [product.weight, product.price_for_100_original, product.price_for_100_final]
 		ws.append(data)
 		specs = product.specs or ''
@@ -68,6 +95,10 @@ def dump_to_excel(session, func, suffix='', write_only=True):
 
 if __name__ == '__main__':
 	session = Session()
-	dump_to_excel(session, write_model_to_worksheet_all, '_all')
+	# dump_to_excel(session, write_model_to_worksheet_all, '_all')
+	mutations = {
+		'img_url': transform_img_url,
+		'img_local_path': transform_img_local_path,
+	}
 	dump_to_excel(session, write_model_to_worksheet_filtered, '_filtered')
 	dump_to_excel(session, write_model_to_worksheet_highlight, '_highlight', write_only=False)
