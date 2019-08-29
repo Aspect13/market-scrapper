@@ -18,6 +18,14 @@ Base = declarative_base()
 
 WEIGHT_PATTERN = re.compile(r' (\d+) г', re.UNICODE)
 
+class ImageModel(Base):
+	__tablename__ = 'images'
+
+	id = Column(Integer, primary_key=True)
+	date_added = Column(DateTime, default=datetime.datetime.now)
+	url = Column(String(256), nullable=False,)
+	filename = Column(String(256), nullable=True)
+
 
 class ProductModel(Base):
 	__tablename__ = 'products'
@@ -38,6 +46,9 @@ class ProductModel(Base):
 	other_shop = Column(Boolean, default=False, nullable=False)
 	other_shop_id = Column(String(128), nullable=True)
 	other_shop_url = Column(String(512), nullable=True, unique=True)
+
+	image_id = Column(Integer, ForeignKey('images.id'))
+	image = relationship('ImageModel', back_populates='products')
 
 	img_url = Column(String(256), nullable=False,)
 	img_filename = Column(String(256), nullable=True)

@@ -57,7 +57,7 @@ class Image:
 		if self.exists:
 			if destination_folder != self.FOLDER_DEFAULT:
 				import shutil
-				shutil.copy(self.FOLDER_DEFAULT, destination_folder)
+				shutil.copy(Path(self.FOLDER_DEFAULT, self.exists), Path(destination_folder, self.exists))
 			return self.exists
 
 		file_name = get_unique_file_name(destination_folder, self.extension)
@@ -71,14 +71,12 @@ class Image:
 
 		d = json.load(open(Path(ROOT_DIR, 'tmp', 'tmp.json'), 'r'))
 		if destination_folder != self.FOLDER_DEFAULT:
-			d.update({self.url: str(Path(destination_folder, file_name))})
-			print(d)
-			json.dump(open(Path(ROOT_DIR, 'tmp', 'tmp.json'), 'w'), d)
+			d[self.url] = str(Path(destination_folder, file_name))
+			json.dump(d, open(Path(ROOT_DIR, 'tmp', 'tmp.json'), 'w'))
 			return Path(destination_folder, file_name)
 
-		d.update({self.url: file_name})
-		print(d)
-		json.dump(open(Path(ROOT_DIR, 'tmp', 'tmp.json'), 'w'), d)
+		d[self.url] = file_name
+		json.dump(d, open(Path(ROOT_DIR, 'tmp', 'tmp.json'), 'w'))
 		return file_name
 
 	def __repr__(self):
