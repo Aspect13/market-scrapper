@@ -9,11 +9,7 @@ from common.logger_custom import logger
 from settings import MAX_GET_ATTEMPTS, TIMEOUT_SEC, SITECACHE_PATH, CACHE_DICT_PATH, CACHED_FOLDER, HEADERS
 
 
-class IsRedirectError(Exception):
-	# def __init__(self, *args, **kwargs):
-	# 	print('IsRedirectError', args, kwargs)
-	# 	pass
-	msg = 'Link is a redirect'
+
 
 
 async def fetch(session, url):

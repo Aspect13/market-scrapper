@@ -1,5 +1,4 @@
 import json
-import re
 from json import JSONDecodeError
 from pathlib import Path
 import functools
@@ -31,26 +30,37 @@ def get_cache_dict():
 	return {}
 
 
-def get_link_set():
+def get_link_set(force_update_from_xlsx=False):
+	link_set = []
 	try:
 		link_set = json.load(open(LINK_SET_PATH, 'r', encoding='utf8'))
 		assert link_set
+		assert not force_update_from_xlsx
 	except (FileNotFoundError, AssertionError, JSONDecodeError):
 		try:
 			from openpyxl import load_workbook
 			from settings import IO_PATH
 			wb = load_workbook(Path(IO_PATH, 'link_set.xlsx'))
 			ws = wb.active
-			link_set = []
 			for row in ws.iter_rows(min_row=2):
 				item = {
 					'category_name': row[0].value,
 					'url': row[1].value
 				}
-				link_set.append(item)
+
+				# if not any(item['url'] == i.url for i in link_set):
+				if (not force_update_from_xlsx) or (force_update_from_xlsx and item not in link_set):
+					link_set.append(item)
+
 			json.dump(link_set, open(LINK_SET_PATH, 'w', encoding='utf8'))
 		except FileNotFoundError as e:
 			logger.critical('No link set provided')
 			raise e
 
 	return link_set
+
+
+def add_schema(url, schema='http'):
+	if not url.startswith(schema):
+		return f'{schema}:{url}'
+	return url

@@ -10,6 +10,7 @@ from common.logger_custom import logger
 
 # import locale
 # locale.setlocale(locale.LC_TIME, ('RU', 'UTF8'))
+from common.misc import add_schema
 from settings import PAGE_PARAM
 from syncronous.utils import get_soup, get_pages_count, write_tmp_soup, download_image
 
@@ -24,7 +25,7 @@ class Product:
 		href = urlparse(title.a['href'])
 		Item.detail_url = 'https://market.yandex.ru{path}/spec?{query}'.format(path=href.path, query=href.query)
 		Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
-		Item.img_url = list_soup.find('img')['src']
+		Item.img_url = add_schema(list_soup.find('img')['src'])
 		Item._get_prices(list_soup.find_all('div', 'price'))
 		Item._get_reviews()
 		return Item
@@ -36,7 +37,7 @@ class Product:
 		Item.soup = Item.details
 		Item.name = Item.details.find('h1', 'title').string
 		Item.id = json.loads(Item.details.find('div', 'n-product-headline')['data-bem'])['n-product-headline']
-		Item.img_url = Item.details.find('a', '.n-product-headline__view').find('img', 'image')['src']
+		Item.img_url = add_schema(Item.details.find('a', '.n-product-headline__view').find('img', 'image')['src'])
 		Item._get_prices(*[i.find_all('', 'price') for i in Item.details.find_all('div', 'n-product-default-offer', )])
 		Item._get_reviews()
 		return Item
@@ -47,10 +48,10 @@ class Product:
 		Item.soup = list_soup
 		title = list_soup.find('div', 'n-snippet-card2__title')
 		Item.name = title.a['title']
-		Item.detail_url = f'https:{title.a["href"]}'
+		Item.detail_url = f'http:{title.a["href"]}'
 		# Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
 		Item.id = list_soup['id']
-		Item.img_url = list_soup.find('img')['src']
+		Item.img_url = add_schema(list_soup.find('img')['src'])
 		Item._get_prices(list_soup.find_all('div', 'price'))
 		# Item._get_reviews()
 		return Item
@@ -116,10 +117,8 @@ class Product:
 	# 		'specs': str(self.specs),
 	# 	}
 
-	def download_image(self, name):
-		if not name:
-			name = self.id
-		return download_image(self.img_url, name=name)
+	def download_image(self):
+		return download_image(self.img_url)
 
 	def __repr__(self):
 		d = self.__dict__.copy()

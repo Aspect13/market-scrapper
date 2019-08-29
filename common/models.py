@@ -40,7 +40,9 @@ class ProductModel(Base):
 	other_shop_url = Column(String(512), nullable=True, unique=True)
 
 	img_url = Column(String(256), nullable=False,)
-	img_local_path = Column(String(256), nullable=True)
+	img_filename = Column(String(256), nullable=True)
+
+	cached = relationship('CachedHtml', back_populates='product')
 
 	@property
 	def list_url(self):
@@ -118,6 +120,8 @@ class CachedHtml(Base):
 	url = Column(String(512), nullable=False, unique=True)
 	file_name = Column(String(128), nullable=False, unique=True)
 	date_added = Column(DateTime, default=datetime.datetime.now)
+	product_id = Column(Integer, ForeignKey('products.id'), nullable=True)
+	product = relationship('ProductModel', back_populates='cached')
 
 	def __repr__(self):
 		return '<CachedHtml id={id} date={date} file_name={file_name} url={url}>'.format(
