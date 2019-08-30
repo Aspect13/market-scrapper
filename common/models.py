@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
 from common.misc import pathify, get_cache_dict, get_link_set
-from settings import DB_PATH, LINK_SET_PATH, CACHE_DICT_PATH, CACHED_FOLDER
+from settings import DB_PATH, CACHED_FOLDER
 
 engine = create_engine(f'sqlite:///{DB_PATH}', echo=__name__ == '__main__')
 Session = sessionmaker(bind=engine)
@@ -18,13 +18,15 @@ Base = declarative_base()
 
 WEIGHT_PATTERN = re.compile(r' (\d+) г', re.UNICODE)
 
+
 class ImageModel(Base):
 	__tablename__ = 'images'
 
 	id = Column(Integer, primary_key=True)
 	date_added = Column(DateTime, default=datetime.datetime.now)
-	url = Column(String(256), nullable=False,)
+	url = Column(String(256), nullable=False, unique=True)
 	filename = Column(String(256), nullable=True)
+	products = relationship('ProductModel', back_populates='image')
 
 
 class ProductModel(Base):
@@ -47,11 +49,11 @@ class ProductModel(Base):
 	other_shop_id = Column(String(128), nullable=True)
 	other_shop_url = Column(String(512), nullable=True, unique=True)
 
-	image_id = Column(Integer, ForeignKey('images.id'))
+	image_id = Column(Integer, ForeignKey('images.id'), nullable=True)
 	image = relationship('ImageModel', back_populates='products')
 
-	img_url = Column(String(256), nullable=False,)
-	img_filename = Column(String(256), nullable=True)
+	# img_url = Column(String(256), nullable=False,)
+	# img_filename = Column(String(256), nullable=True)
 
 	cached = relationship('CachedHtml', back_populates='product')
 
@@ -138,6 +140,23 @@ class CachedHtml(Base):
 		return '<CachedHtml id={id} date={date} file_name={file_name} url={url}>'.format(
 			**self.__dict__, id=self.id
 		)
+
+
+class ConnectedToModel:
+	def __init__(self, model, session=None):
+		self.model = model
+		self.__session__ = session
+
+	@property
+	def session(self):
+		if self.__session__:
+			return self.__session__
+		print(self.model.__tablename__, ' session init')
+		self.recreate_session()
+		return self.__session__
+
+	def recreate_session(self):
+		self.__session__ = Session()
 
 
 if __name__ == '__main__':

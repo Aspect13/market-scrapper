@@ -114,5 +114,3 @@ def write_tmp_soup(soup):
 def get_true_other_shop_url(detail_url):
 	soup = get_soup(detail_url, allow_redirects=True)
 	return soup.find('a', 'b-redir-warning__link').text
-
-
