@@ -3,8 +3,9 @@ import json
 from pip._internal.utils.misc import cached_property
 # import locale
 # locale.setlocale(locale.LC_TIME, ('RU', 'UTF8'))
+from sqlalchemy import or_
 
-
+from common.logger_custom import logger
 from common.models import ProductModel, ConnectedToModel
 
 from syncronous.ImageClass import Image
@@ -20,6 +21,7 @@ class Product(ConnectedToModel):
 		('other_shop', 'is_other_shop'),
 		('name', 'name'),
 		('detail_url', 'detail_url'),
+		('detail_url_query', 'detail_url_query'),
 		('original_price', 'original_price'),
 		('final_price', 'final_price'),
 		('image_id', 'image_id'),
@@ -31,8 +33,9 @@ class Product(ConnectedToModel):
 		Item.soup = list_soup
 		title = list_soup.find('div', 'n-snippet-card2__title')
 		Item.name = title.a['title']
-		href = urlparse(title.a['href'])
-		Item.detail_url = 'https://market.yandex.ru{path}/spec?{query}'.format(path=href.path, query=href.query)
+		url_parsed = urlparse(title.a['href'])
+		Item.detail_url = 'https://market.yandex.ru{path}/spec'.format(path=url_parsed.path)
+		Item.detail_url_query = url_parsed.query
 		Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
 		Item.image_url = list_soup.find('img')['src']
 		Item._get_prices(list_soup.find_all('div', 'price'))
@@ -42,7 +45,9 @@ class Product(ConnectedToModel):
 	@classmethod
 	def from_detail_url(cls, url, **kwargs):
 		Item = cls(category_description=kwargs.get('category_description'))
-		Item.detail_url = url
+		url_parsed = urlparse(url)
+		Item.detail_url = f'{url_parsed.scheme}://{url_parsed.netloc}{url_parsed.path}'
+		Item.detail_url_query = url_parsed.query
 		Item.soup = Item.details
 		Item.name = Item.details.find('h1', 'title').string
 		Item.id = json.loads(Item.details.find('div', 'n-product-headline')['data-bem'])['n-product-headline']
@@ -58,7 +63,9 @@ class Product(ConnectedToModel):
 		Item.is_other_shop = True
 		title = list_soup.find('div', 'n-snippet-card2__title')
 		Item.name = title.a['title']
-		Item.detail_url = f'http:{title.a["href"]}'
+		url_parsed = urlparse(title.a['href'])
+		Item.detail_url = f'http://{url_parsed.netloc}{url_parsed.path}'
+		Item.detail_url_query = url_parsed.query
 		# Item.id = json.loads(list_soup['data-bem'])['n-snippet-card2']['modelId']
 		Item.id = list_soup['id']
 		Item.image_url = list_soup.find('img')['src']
@@ -74,7 +81,8 @@ class Product(ConnectedToModel):
 		self.is_other_shop = False
 
 		self.id = None
-		self.detail_url = None
+		self.detail_url = ''
+		self.detail_url_query = ''
 		self.image_url = None
 
 		self.original_price = None
@@ -88,14 +96,20 @@ class Product(ConnectedToModel):
 		return self.image.db_instance.id
 
 	def commit(self):
+		something_changed = False
 		if not self.image.exists:
 			self.image.commit()
 		for k, v in self.MAPPER:
 			k_value, v_value = self.db_instance.__getattribute__(k), self.__getattribute__(v)
-			if k_value != v_value:
+			if str(k_value) != str(v_value):
 				self.db_instance.__setattr__(k, self.__getattribute__(v))
-		self.session.add(self.db_instance)
-		self.session.commit()
+				something_changed = True
+				logger.info(k, ' changed from ', k_value, ' to ', v_value)
+		if something_changed:
+			self.session.add(self.db_instance)
+			self.session.commit()
+		else:
+			print(f'Nothing was changed for {self.db_instance.id}')
 
 	@property
 	def exists(self):
@@ -106,7 +120,7 @@ class Product(ConnectedToModel):
 		if self.__db_instance:
 			return self.__db_instance
 		self.__db_instance = self.session.query(self.model).filter(
-			self.model.detail_url == self.detail_url
+			or_(self.model.detail_url == self.detail_url, self.model.yandex_id == self.id)
 		).first()
 		if not self.__db_instance:
 			self.__db_instance = self.model(detail_url=self.detail_url)
@@ -121,13 +135,19 @@ class Product(ConnectedToModel):
 		self.commit()
 
 	@property
+	def detail_url_full(self):
+		if self.detail_url_query == '':
+			return self.detail_url
+		return f'{self.detail_url}?{self.detail_url_query}'
+
+	@property
 	def true_other_shop_url(self):
 		return self.details.find('a', 'b-redir-warning__link').text
 
 	def _get_reviews(self):
 		if self.is_other_shop:
 			return
-		self.review_url = self.detail_url.replace('/spec', '/reviews')
+		self.review_url = self.detail_url_full.replace('/spec', '/reviews')
 		try:
 			self.review_number = int(self.details.find('a', 'reviews').string.split()[0])
 		except AttributeError:
@@ -158,7 +178,8 @@ class Product(ConnectedToModel):
 
 	@cached_property
 	def details(self):
-		return get_soup(self.detail_url, allow_redirects=self.is_other_shop)
+		#todo fix other_shop_url redirects to actual sites
+		return get_soup(self.detail_url_full, allow_redirects=self.is_other_shop)
 
 	@cached_property
 	def _specs(self):
@@ -173,7 +194,7 @@ class Product(ConnectedToModel):
 		d['specs'] = repr(self.specs)
 		return '''
 			{name} #{id}
-			URL: {detail_url}
+			URL: {detail_url_full}
 			Prices: {original_price}, {final_price}
 			Reviews: {review_number}
 		'''.format(**d)

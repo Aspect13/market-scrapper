@@ -1,6 +1,6 @@
 from sqlalchemy import or_
 
-from common.models import Session, ProductModel, ReviewModel
+from common.models import Session, ProductModel, ReviewModel, ImageModel
 from settings import EXCEL_WB_PATH
 from openpyxl import Workbook, styles
 
@@ -73,6 +73,7 @@ def write_model_to_worksheet_highlight(wb, model, session):
 	header = model.__table__.columns.keys()
 	header += ['weight', 'price_for_100_original', 'price_for_100_final']
 	ws.append(header)
+	# for product in session.query(model).all():
 	for product in session.query(model).all():
 		data = list(map(product.__dict__.get, model.__table__.columns.keys()))
 
@@ -90,6 +91,7 @@ def dump_to_excel(session, func, suffix='', write_only=True):
 	wb = Workbook(write_only=write_only)
 	func(wb, ProductModel, session)
 	write_model_to_worksheet(wb, ReviewModel, session)
+	write_model_to_worksheet(wb, ImageModel, session)
 	wb.save(EXCEL_WB_PATH(suffix))
 
 
@@ -97,8 +99,8 @@ if __name__ == '__main__':
 	session = Session()
 	# dump_to_excel(session, write_model_to_worksheet_all, '_all')
 	mutations = {
-		'img_url': transform_img_url,
-		'img_local_path': transform_img_local_path,
+		# 'img_url': transform_img_url,
+		# 'img_local_path': transform_img_local_path,
 	}
-	dump_to_excel(session, write_model_to_worksheet_filtered, '_filtered')
+	# dump_to_excel(session, write_model_to_worksheet_filtered, '_filtered')
 	dump_to_excel(session, write_model_to_worksheet_highlight, '_highlight', write_only=False)

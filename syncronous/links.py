@@ -18,10 +18,10 @@ RESOLVE_OTHER_SHOP_URL = False
 
 def download_item(soup, category_name=None):
 	try:
-		product = Product.from_list_soup(list_soup=soup)
+		product = Product.from_list_soup(list_soup=soup, category_description=category_name)
 	except IsRedirectError:
 		logger.warning(f'Product is from other shop: {category_name}, {str(soup)[:20]}')
-		product = Product.from_other_shop(list_soup=soup)
+		product = Product.from_other_shop(list_soup=soup, category_description=category_name)
 
 	if RESOLVE_OTHER_SHOP_URL and product.is_other_shop:
 		product.set_other_shop_true_url()

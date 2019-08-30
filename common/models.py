@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, DateT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
+from common.logger_custom import logger
 from common.misc import pathify, get_cache_dict, get_link_set
 from settings import DB_PATH, CACHED_FOLDER
 
@@ -40,13 +41,14 @@ class ProductModel(Base):
 
 	name = Column(String(128), nullable=False)
 	detail_url = Column(String(512), nullable=False, unique=True)
+	detail_url_query = Column(String(512), nullable=True, unique=False)
 	original_price = Column(Integer, nullable=True)
 	final_price = Column(Integer, nullable=True)
 	specs = Column(String(1024), nullable=True)
 	reviews = relationship('ReviewModel', back_populates='product')
 
 	other_shop = Column(Boolean, default=False, nullable=False)
-	other_shop_id = Column(String(128), nullable=True)
+	# other_shop_id = Column(String(128), nullable=True)
 	other_shop_url = Column(String(512), nullable=True, unique=True)
 
 	image_id = Column(Integer, ForeignKey('images.id'), nullable=True)
@@ -143,20 +145,23 @@ class CachedHtml(Base):
 
 
 class ConnectedToModel:
-	def __init__(self, model, session=None):
+	__session__ = None
+
+	def __init__(self, model):
 		self.model = model
-		self.__session__ = session
 
 	@property
 	def session(self):
 		if self.__session__:
 			return self.__session__
 		print(self.model.__tablename__, ' session init')
+		logger.debug(f'{self.__class__} session init')
 		self.recreate_session()
 		return self.__session__
 
 	def recreate_session(self):
-		self.__session__ = Session()
+		ConnectedToModel.__session__ = Session()
+		# self.__session__ = ConnectedToModel.__session__
 
 
 if __name__ == '__main__':
